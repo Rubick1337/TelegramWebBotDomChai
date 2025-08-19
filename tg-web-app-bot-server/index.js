@@ -7,11 +7,9 @@ const cors = require('cors');
 const webAppUrl = 'https://728fcdc81543.ngrok-free.app/products'
 const bot = new TelegramBot(process.env.TELEGRAM_TOKEN, {polling: true});
 
-// Middleware
 app.use(cors({ origin: ['http://localhost:3000', webAppUrl], credentials: true }));
 app.use(express.json());
 
-// Обработчик WebApp данных
 app.post('/web-data', async (req, res) => {
     const {queryId, products = [], totalPrice} = req.body;
     try {
@@ -41,13 +39,12 @@ bot.on('message', async (msg) => {
                 inline_keyboard: [
                     [{ text: "Войти в систему", web_app: {url: webAppUrl}}]
                 ]
-                // Убрал resize_keyboard для inline-клавиатуры
+
             }
         });
     }
 });
 
-// Запуск сервера (ОДИН РАЗ!)
 const PORT = process.env.PORT || 8500;
 app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);

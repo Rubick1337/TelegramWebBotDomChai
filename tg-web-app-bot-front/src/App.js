@@ -5,6 +5,7 @@ import {useTelegram} from "./hooks/useTelegram";
 import Header from "./Components/Header/Header";
 import {Form, Route, Routes} from "react-router-dom";
 import ProductList from "./Components/ProductList/ProductList";
+import AuthForm from "./Components/Form/Form";
 function App() {
   const {tg,onToogleButton} = useTelegram();
   useEffect(() => {
@@ -16,7 +17,7 @@ function App() {
       <Header></Header>
         <Routes>
             <Route path="/products" element={<ProductList/>}></Route>
-            <Route path="/form" element={<Form/>}></Route>
+            <Route path="/form" element={<AuthForm/>}></Route>
         </Routes>
     </div>
   );
