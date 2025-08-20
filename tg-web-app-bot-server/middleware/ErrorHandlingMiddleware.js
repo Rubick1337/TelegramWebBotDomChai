@@ -1,9 +1,8 @@
-const ApiErrror = require('../error/ApiError.js')
-const {message} = require("telegraf/filters");
+const ApiError = require('../error/ApiError');
 
-module.exports = function (err,req, res, next) {
-    if(err instanceof ApiErrror){
-        res.status(err.status).json({message: err.message})
+module.exports = function (err, req, res, next) {
+    if (err instanceof ApiError) {
+        return res.status(err.status).json({message: err.message})
     }
-    return res.status(500).json({message: "Server Error"})
+    return res.status(500).json({message: "Непредвиденная ошибка!"})
 }

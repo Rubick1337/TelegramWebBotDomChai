@@ -14,7 +14,6 @@ function App() {
 
   return (
     <div className="App">
-      <Header></Header>
         <Routes>
             <Route path="/products" element={<ProductList/>}></Route>
             <Route path="/form" element={<AuthForm/>}></Route>

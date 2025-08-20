@@ -20,6 +20,7 @@ app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:8000', "https://4bff700d6634.ngrok-free.app"],
     credentials: true
 }));
+app.use(express.static(path.resolve(__dirname, 'static')));
 app.use(cookieParser());
 app.use(express.static(path.resolve(__dirname, "static")));
 app.use(fileUpload({}));

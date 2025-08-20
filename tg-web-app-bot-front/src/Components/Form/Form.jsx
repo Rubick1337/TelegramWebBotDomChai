@@ -126,11 +126,9 @@ const AuthForm = () => {
         e.preventDefault();
 
         if (isTelegram) {
-            // В Telegram данные отправятся через mainButtonClicked
             return;
         }
-
-        // Обычная веб-форма (не в Telegram)
+        
         setLoading(true);
         setMessage('');
 
