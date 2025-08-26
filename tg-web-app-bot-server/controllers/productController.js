@@ -2,6 +2,7 @@ const {Product,ProductType} = require('../models/models')
 const ApiError = require('../error/ApiError')
 const uuid = require('uuid')
 const path = require('path');
+const cache = require("../redis/cacheUtils")
 const fs = require("fs");
 const { Op } = require('sequelize');
 
@@ -15,6 +16,9 @@ class ProductController {
             let fileName = uuid.v4()+ ".jpg"
             const prodcut = await Product.create({name,rating,description,price,inStock,img: fileName,productTypeId})
             img.mv(path.resolve(__dirname,'..','static',fileName));
+
+            await cache.invalidateCache('products');
+
             return res.json(prodcut)
         }
         catch (e) {
@@ -30,6 +34,19 @@ class ProductController {
             let offset = page * limit - limit;
             let products;
             let whereCondition = {};
+
+            const cacheKey = cache.generateCacheKey('products',"getAll",{
+                productTypeId, limit, page, search, sortOrder
+            });
+
+            const cachedProducts = await cache.getCache(cacheKey);
+
+            if (cachedProducts) {
+                console.log('Cache HIT:', cacheKey);
+                return res.json(cachedProducts);
+            }
+
+            console.log('Cache MISS:', cacheKey);
 
             if (search) {
                 whereCondition[Op.or] = [
@@ -64,6 +81,7 @@ class ProductController {
                 offset,
                 order
             });
+            await cache.setCache(cacheKey, 3600, products);
 
             return res.json(products);
         } catch (e) {
@@ -74,6 +92,16 @@ class ProductController {
         try
         {
             const {id} = req.params
+
+            const cacheKey = cache.generateCacheKey('products','getById',{id});
+            const cachedProduct = await cache.getCache(cacheKey);
+            if (cachedProduct) {
+                console.log('Cache HIT for product:', id);
+                return res.json(cachedProduct);
+            }
+
+            console.log('Cache MISS for product:', id);
+
             const product = await Product.findOne(
                 {
                     where:{id},
@@ -82,6 +110,7 @@ class ProductController {
                         as: 'productType', }
                 }
             )
+            await cache.setCache(cacheKey, 7200, product);
             return res.json(product)
         }
         catch (e) {
@@ -129,7 +158,7 @@ class ProductController {
                     productTypeId,
                     });
             }
-
+            await cache.invalidateCache('products');
             return res.json({ message: 'Продукт обновлен' });
         } catch (error) {
             console.error(error);
@@ -152,6 +181,7 @@ class ProductController {
                 });
             }
             await product.destroy();
+            await cache.invalidateCache('products');
             return res.json({ message: 'Запись о продукте успешно удалена' });
         } catch (error) {
             console.error(error);

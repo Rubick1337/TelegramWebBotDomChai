@@ -1,13 +1,19 @@
 const {Order, OrderItem, Product, User} = require('../models/models')
+const cache = require("../redis/cacheUtils")
 
 class OrderController {
     async getAll(req, res) {
         try {
             const {status, search, page = 1, limit = 10} = req.query
             const offset = (page - 1) * limit
-
             const whereConditions = {}
+            const cacheKey = cache.generateCacheKey("orders","getAll",{status, search, page, limit})
+            const cacheData = await cache.getCache(cacheKey)
 
+            if (cacheData) {
+                console.log("cache data")
+                return res.json(cacheData)
+            }
             if (status && status !== 'all') {
                 whereConditions.status = status
             }
@@ -31,7 +37,7 @@ class OrderController {
                 offset: parseInt(offset),
                 distinct: true
             })
-
+            await cache.setCache(cacheKey, 3600, orders);
             return res.json({
                 orders,
                 totalPages: Math.ceil(count / limit),
@@ -48,7 +54,13 @@ class OrderController {
     async getOne(req, res) {
         try {
             const {id} = req.params
+            const cacheKey = cache.generateCacheKey("orders","getById",{id})
+            const cacheData = await cache.getCache(cacheKey)
 
+            if (cacheData) {
+                console.log("cache data")
+                return res.json(cacheData)
+            }
             const order = await Order.findOne({
                 where: {id},
                 include: [{
@@ -60,7 +72,7 @@ class OrderController {
             if (!order) {
                 return res.status(404).json({message: 'Заказ не найден'})
             }
-
+            await cache.setCache(cacheKey, 3600, order);
             return res.json(order)
 
         } catch (error) {
@@ -101,7 +113,7 @@ class OrderController {
                     include: [Product]
                 }]
             })
-
+            await cache.invalidateCache("orders")
             return res.status(201).json(fullOrder)
 
         } catch (error) {
@@ -127,6 +139,7 @@ class OrderController {
             }
 
             await order.update({status})
+            await cache.invalidateCache("orders")
             return res.json(order)
 
         } catch (error) {
