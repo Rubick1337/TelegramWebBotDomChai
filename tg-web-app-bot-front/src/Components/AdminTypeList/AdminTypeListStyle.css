@@ -1,0 +1,19 @@
+.admin-type-list-container {
+    padding: 16px;
+    min-height: 100vh;
+}
+.admin-type-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    padding: 16px;
+}
+@media (max-width: 768px) {
+    .admin-type-list {
+        grid-template-columns: 1fr;
+    }
+
+    .custom-search-container {
+        min-width: 100%;
+    }
+}

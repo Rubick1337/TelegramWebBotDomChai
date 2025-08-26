@@ -4,24 +4,46 @@ const cache = require("../redis/cacheUtils")
 class OrderController {
     async getAll(req, res) {
         try {
-            const {status, search, page = 1, limit = 10} = req.query
+            const {status, search, page = 1, limit = 10, userId} = req.query
             const offset = (page - 1) * limit
             const whereConditions = {}
-            const cacheKey = cache.generateCacheKey("orders","getAll",{status, search, page, limit})
-            const cacheData = await cache.getCache(cacheKey)
 
-            if (cacheData) {
-                console.log("cache data")
-                return res.json(cacheData)
+            // Генерируем ключ кэша
+            const cacheKey = cache.generateCacheKey("orders",'getAll',{status, search, page, limit, userId});
+
+            // Проверяем кэш
+            const cacheData = await cache.getCache(cacheKey);
+            if(cacheData) {
+                console.log("Cache Data for orders:");
+                // Убедимся, что возвращаем правильную структуру
+                if (cacheData.orders && Array.isArray(cacheData.orders)) {
+                    return res.json(cacheData);
+                }
+                // Если в кэше некорректные данные, продолжаем без кэша
+                console.log("Invalid cache data, fetching from DB");
             }
+
             if (status && status !== 'all') {
                 whereConditions.status = status
+            }
+
+            // Добавляем фильтр по userId если он передан
+            if (userId) {
+                whereConditions.userId = userId
             }
 
             let includeConditions = [{
                 model: OrderItem,
                 include: [Product]
             }]
+
+            // Для админов добавляем информацию о пользователе
+            if (req.user && req.user.role === 'admin') {
+                includeConditions.push({
+                    model: User,
+                    attributes: ['id', 'username', 'email', 'adress', 'role']
+                })
+            }
 
             if (search) {
                 if (!isNaN(search)) {
@@ -37,30 +59,52 @@ class OrderController {
                 offset: parseInt(offset),
                 distinct: true
             })
-            await cache.setCache(cacheKey, 3600, orders);
-            return res.json({
-                orders,
+
+            // Гарантируем, что orders всегда массив
+            const result = {
+                orders: orders || [],
                 totalPages: Math.ceil(count / limit),
                 currentPage: parseInt(page),
                 totalCount: count
-            })
+            }
+
+            // Сохраняем в кэш только если данные валидны
+            if (Array.isArray(orders)) {
+                await cache.setCache(cacheKey, 3600, result);
+            }
+
+            return res.json(result)
 
         } catch (error) {
             console.error('Order getAll error:', error)
-            return res.status(500).json({message: 'Ошибка при получении заказов'})
+            // Возвращаем пустой массив при ошибке
+            return res.json({
+                orders: [],
+                totalPages: 0,
+                currentPage: 1,
+                totalCount: 0
+            })
         }
     }
 
     async getOne(req, res) {
         try {
             const {id} = req.params
-            const cacheKey = cache.generateCacheKey("orders","getById",{id})
-            const cacheData = await cache.getCache(cacheKey)
 
-            if (cacheData) {
-                console.log("cache data")
-                return res.json(cacheData)
+            // Генерируем ключ кэша
+            const cacheKey = cache.generateCacheKey("orders",'getOne',{id});
+
+            // Проверяем кэш
+            const cacheData = await cache.getCache(cacheKey);
+            if(cacheData) {
+                console.log("Cache data for order details");
+                // Проверяем валидность данных в кэше
+                if (cacheData && cacheData.id) {
+                    return res.json(cacheData);
+                }
+                console.log("Invalid cache data, fetching from DB");
             }
+
             const order = await Order.findOne({
                 where: {id},
                 include: [{
@@ -72,7 +116,10 @@ class OrderController {
             if (!order) {
                 return res.status(404).json({message: 'Заказ не найден'})
             }
+
+            // Сохраняем в кэш
             await cache.setCache(cacheKey, 3600, order);
+
             return res.json(order)
 
         } catch (error) {

@@ -22,7 +22,7 @@ function initBot() {
                         console.log('Building keyboard for admin');
                         keyboard = [
                             [{text: '⚙️ Панель управления', web_app: {url: `${process.env.WEB_APP_URL}/admin`}}],
-                            [{text: '📦 Все заказы', web_app: {url: `${process.env.WEB_APP_URL}/admin/orders`}}],
+                            [{text: '📦 Все заказы', web_app: {url: `${process.env.WEB_APP_URL}/order`}}],
                             [{text: '📊 Статистика', web_app: {url: `${process.env.WEB_APP_URL}/stats`}}],
                             [{text: '🚪 Выйти из системы'}]
                         ];

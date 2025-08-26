@@ -12,11 +12,13 @@ class TypeController {
     }
     async getAll(req, res) {
         let { limit, page, search } = req.query;
+        console.log("Dasdas")
+        console.log(req.query)
         let offset = page * limit - limit;
         let types;
         let whereCondition = {};
         const cacheKey = cache.generateCacheKey("types",'getAll',{limit, page, search});
-        const cacheData = cache.getCache(cacheKey);
+        const cacheData = await cache.getCache(cacheKey);
         if(cacheData) {
             console.log("Cache Data:");
             return res.json(cacheData)
@@ -46,8 +48,9 @@ class TypeController {
         return res.json(types)
     }
     async delete(req,res,next){
-        const { id } = req.query;
-
+        const { id } = req.params;
+        console.log("adsdasdsadsawq1231243")
+        console.log(id)
         try {
             const type = await ProductType.findByPk(id);
             if (!type) {

@@ -1,16 +1,14 @@
-// src/components/AdminProductList/AdminProductList.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTelegram } from "../../hooks/useTelegram";
 import {
-    fetchProducts,
-    deleteProduct,
+    fetchTypes,
+    deleteType,
     clearError,
     clearSuccess
-} from '../../store/slice/productSlice';
-import { fetchTypes } from '../../store/slice/productTypeSlice';
-import AdminProductItem from "../AdminProductItem/AdminProductItem";
-import ProductForm from "../ProductForm/ProductForm";
+} from '../../store/slice/productTypeSlice';
+import AdminTypeItem from "../AdminTypeItem/AdminTypeItem";
+import TypeForm from "../TypeForm/TypeForm";
 import {
     Pagination,
     Box,
@@ -23,15 +21,13 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
-import './AdminProductListStyle.css';
+import './AdminTypeListStyle.css';
 
-const AdminProductList = () => {
+const AdminTypeList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [sortOrder, setSortOrder] = useState('expensive');
     const [tempSearch, setTempSearch] = useState('');
-    const [editProduct, setEditProduct] = useState(null);
+    const [editType, setEditType] = useState(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
     const [notification, setNotification] = useState({ open: false, message: '', type: '' });
@@ -42,9 +38,18 @@ const AdminProductList = () => {
     const muiTheme = useTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
-    const { products, loading, error, success, deleteLoading, totalCount } = useSelector(state => state.products);
-    const { types, loading: typesLoading } = useSelector(state => state.types);
+    const { types, loading, error, success, deleteLoading } = useSelector(state => state.types);
     const limit = 6;
+
+    // Функция для загрузки типов
+    const loadTypes = useCallback(() => {
+        const params = {
+            limit,
+            page: currentPage,
+            search: searchQuery
+        };
+        dispatch(fetchTypes(params));
+    }, [dispatch, currentPage, searchQuery, limit]);
 
     const paginationStyles = {
         '& .MuiPaginationItem-root': {
@@ -76,15 +81,16 @@ const AdminProductList = () => {
             flexWrap: isMobile ? 'wrap' : 'nowrap'
         }
     };
-    console.log(products);
-    console.log(types)
-    // Обработчик удаления товара
-    const handleDelete = (productId) => {
-        dispatch(deleteProduct(productId))
+
+    // Обработчик удаления типа
+    const handleDelete = (typeId) => {
+        dispatch(deleteType(typeId))
             .unwrap()
             .then(() => {
-                setNotification({ open: true, message: 'Товар успешно удален', type: 'success' });
+                setNotification({ open: true, message: 'Тип успешно удален', type: 'success' });
                 setDeleteConfirm(null);
+                // Перезагружаем список типов после удаления
+                loadTypes();
             })
             .catch((error) => {
                 setNotification({ open: true, message: `Ошибка удаления: ${error}`, type: 'error' });
@@ -92,56 +98,37 @@ const AdminProductList = () => {
     };
 
     // Обработчик открытия формы редактирования
-    const handleEdit = (product) => {
-        setEditProduct(product);
+    const handleEdit = (type) => {
+        setEditType(type);
         setIsFormOpen(true);
     };
 
     // Обработчик открытия формы создания
     const handleCreate = () => {
-        setEditProduct(null);
+        setEditType(null);
         setIsFormOpen(true);
     };
 
     // Обработчик закрытия формы
     const handleCloseForm = () => {
         setIsFormOpen(false);
-        setEditProduct(null);
+        setEditType(null);
     };
 
     // Обработчик успешного сохранения
     const handleSaveSuccess = (message) => {
         setIsFormOpen(false);
-        setEditProduct(null);
+        setEditType(null);
         setNotification({ open: true, message, type: 'success' });
 
-        // Перезагружаем список товаров
-        const params = {
-            limit,
-            page: currentPage,
-            search: searchQuery,
-            productTypeId: selectedCategory,
-            sortOrder: sortOrder === 'expensive' ? 'desc' : 'asc'
-        };
-        dispatch(fetchProducts(params));
+        // Перезагружаем список типов после создания/редактирования
+        loadTypes();
     };
 
-    // Загружаем типы продуктов при монтировании компонента
+    // Загружаем типы при монтировании компонента и при изменении параметров
     useEffect(() => {
-        dispatch(fetchTypes());
-    }, [dispatch]);
-
-    // Загружаем товары при изменении параметров
-    useEffect(() => {
-        const params = {
-            limit,
-            page: currentPage,
-            search: searchQuery,
-            productTypeId: selectedCategory,
-            sortOrder: sortOrder === 'expensive' ? 'desc' : 'asc'
-        };
-        dispatch(fetchProducts(params));
-    }, [dispatch, currentPage, searchQuery, selectedCategory, sortOrder]);
+        loadTypes();
+    }, [loadTypes]);
 
     // Обработка ошибок и успешных операций
     useEffect(() => {
@@ -181,22 +168,12 @@ const AdminProductList = () => {
         applySearch();
     };
 
-    const handleCategoryChange = (e) => {
-        setSelectedCategory(e.target.value);
-        setCurrentPage(1);
-    };
-
-    const handleSortChange = (e) => {
-        setSortOrder(e.target.value);
-        setCurrentPage(1);
-    };
-
     const handlePageChange = (event, page) => {
         setCurrentPage(page);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const totalPages = Math.ceil(totalCount / limit);
+    const totalPages = Math.ceil(types.count / limit);
 
     if (loading && currentPage === 1) {
         return (
@@ -208,7 +185,7 @@ const AdminProductList = () => {
 
     return (
         <div
-            className="admin-product-list-container"
+            className="admin-type-list-container"
             style={{
                 backgroundColor: isDark ? 'var(--tg-theme-bg-color, #212121)' : 'var(--tg-theme-bg-color, #ffffff)',
                 color: isDark ? 'var(--tg-theme-text-color, #ffffff)' : 'var(--tg-theme-text-color, #000000)'
@@ -216,10 +193,10 @@ const AdminProductList = () => {
         >
             {/* Заголовок и кнопка добавления */}
             <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ margin: 0 }}>Управление товарами</h2>
+                <h2 style={{ margin: 0 }}>Управление типами продуктов</h2>
                 <button
                     onClick={handleCreate}
-                    className="add-product-btn"
+                    className="add-type-btn"
                     style={{
                         backgroundColor: '#1976d2',
                         color: 'white',
@@ -233,11 +210,11 @@ const AdminProductList = () => {
                     }}
                 >
                     <AddIcon fontSize="small" />
-                    Добавить товар
+                    Добавить тип
                 </button>
             </Box>
 
-            {/* Поиск и фильтры */}
+            {/* Поиск */}
             <Box sx={{ p: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                 {/* Кастомный поиск */}
                 <div className="custom-search-container">
@@ -245,7 +222,7 @@ const AdminProductList = () => {
                     <input
                         ref={searchInputRef}
                         type="text"
-                        placeholder="Поиск товаров..."
+                        placeholder="Поиск типов..."
                         value={tempSearch}
                         onChange={handleTempSearchChange}
                         onKeyPress={handleKeyPress}
@@ -253,57 +230,18 @@ const AdminProductList = () => {
                         className="custom-search-input"
                     />
                 </div>
-
-                {/* Кастомный select для категории с динамическими типами */}
-                <div className="custom-select-container">
-                    <select
-                        value={selectedCategory}
-                        onChange={handleCategoryChange}
-                        className="custom-select"
-                        disabled={typesLoading}
-                    >
-                        <option value="">Все категории</option>
-                        {types.rows && types.rows.map(type => (
-                            <option key={type.id} value={type.id}>
-                                {type.name}
-                            </option>
-                        ))}
-                    </select>
-                    {typesLoading && (
-                        <CircularProgress size={16} sx={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }} />
-                    )}
-                </div>
-
-                <div className="custom-select-container">
-                    <select
-                        value={sortOrder}
-                        onChange={handleSortChange}
-                        className="custom-select"
-                    >
-                        <option value="expensive">Сначала дорогие</option>
-                        <option value="cheap">Сначала дешевые</option>
-                    </select>
-                </div>
             </Box>
 
-            <div className={'admin-product-list'}>
-                {products.map(product => {
-                    console.log(types)
-                    const productType = types.rows.find(t => t.id === product.productTypeId);
-                    const typeName = productType ? productType.name : 'Неизвестный тип';
-                    console.log(productType)
-                    console.log(typeName)
-                    return (
-                        <AdminProductItem
-                            key={product.id}
-                            type={typeName}
-                            product={product}
-                            onEdit={handleEdit}
-                            onDelete={() => setDeleteConfirm(product)}
-                            className={'admin-product-item'}
-                        />
-                    );
-                })}
+            <div className={'admin-type-list'}>
+                {types.rows && types.rows.map(type => (
+                    <AdminTypeItem
+                        key={type.id}
+                        type={type}
+                        onEdit={handleEdit}
+                        onDelete={() => setDeleteConfirm(type)}
+                        className={'admin-type-item'}
+                    />
+                ))}
             </div>
 
             {totalPages > 1 && (
@@ -327,9 +265,9 @@ const AdminProductList = () => {
                 </Box>
             )}
 
-            {products.length === 0 && !loading && (
+            {types.rows && types.rows.length === 0 && !loading && (
                 <Box textAlign="center" p={4} sx={{ color: isDark ? '#ffffff' : '#000000' }}>
-                    Товары отсутствуют
+                    Типы продуктов отсутствуют
                 </Box>
             )}
 
@@ -370,7 +308,7 @@ const AdminProductList = () => {
             >
                 <Box p={2}>
                     <h3>Подтверждение удаления</h3>
-                    <p>Вы уверены, что хотите удалить товар "{deleteConfirm?.name}"?</p>
+                    <p>Вы уверены, что хотите удалить тип "{deleteConfirm?.name}"?</p>
                     <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
                         <button
                             onClick={() => setDeleteConfirm(null)}
@@ -403,11 +341,11 @@ const AdminProductList = () => {
                 </Box>
             </Dialog>
 
-            {/* Форма редактирования/создания товара */}
-            <ProductForm
+            {/* Форма редактирования/создания типа */}
+            <TypeForm
                 open={isFormOpen}
                 onClose={handleCloseForm}
-                product={editProduct}
+                type={editType}
                 onSaveSuccess={handleSaveSuccess}
             />
 
@@ -433,4 +371,4 @@ const AdminProductList = () => {
     );
 };
 
-export default AdminProductList;
+export default AdminTypeList;

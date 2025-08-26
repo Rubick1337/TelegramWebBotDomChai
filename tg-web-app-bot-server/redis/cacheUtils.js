@@ -43,7 +43,7 @@ class CacheUtils{
             }
         }
         catch(err){
-            console.error('Redis invalidation error:', error);
+            console.error('Redis invalidation error:', err);
             return false;
         }
     }

@@ -65,7 +65,8 @@ const AuthForm = () => {
                     username: userData.username,
                     role: userData.role,
                     email: userData.email,
-                    userId: userData.id
+                    userId: userData.id,
+                    adress: userData.adress,
                 };
 
                 console.log('Отправка данных в Telegram:', telegramData);
@@ -128,7 +129,7 @@ const AuthForm = () => {
         if (isTelegram) {
             return;
         }
-        
+
         setLoading(true);
         setMessage('');
 

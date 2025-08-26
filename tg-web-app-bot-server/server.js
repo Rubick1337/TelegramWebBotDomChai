@@ -19,8 +19,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:8000', process.env.WEB_APP_URL],
-    credentials: true
+    origin: [
+        'http://localhost:3000',
+        'http://localhost:8000',
+        process.env.WEB_APP_URL,
+        'https://*.ngrok-free.app', // Разрешаем все ngrok домены
+        'https://*.ngrok.io'        // Альтернативные ngrok домены
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.static(path.resolve(__dirname, 'static')));
 app.use(cookieParser());
@@ -33,15 +41,20 @@ app.post('/web-data', async (req, res) => {
     const { queryId, products = [], totalPrice, chatId } = req.body;
 
     try {
+        // Проверяем авторизацию пользователя
         const userSession = userSessions[chatId];
-        let userAddress = userSession?.userData?.adress || 'Адрес не указан';
 
-        let order = null;
-        let userId = null;
-
-        if (userSession?.userData?.userId) {
-            userId = userSession.userData.userId;
+        if (!userSession || !userSession.isAuthenticated) {
+            // Пользователь не авторизован
+            return res.status(401).json({
+                error: 'not_authenticated',
+                message: 'Для оформления заказа необходимо авторизоваться'
+            });
         }
+
+        let userAddress = userSession?.userData?.adress || 'Адрес не указан';
+        let order = null;
+        let userId = userSession.userData.userId;
 
         try {
             const orderResponse = await fetch(`http://localhost:8000/api/order`, {
@@ -90,17 +103,17 @@ app.post('/web-data', async (req, res) => {
             `• ${item.name} - ${item.quantity || 1} шт. × ${item.price} ₽ = ${(item.quantity || 1) * item.price} ₽`
         ).join('\n');
 
-        await bot.sendMessage(chatId,
-            `🛒 *Подтверждение заказа*\n\n` +
-            `📍 *Адрес доставки:* ${userAddress}\n` +
-            `💰 *Общая сумма:* ${totalPrice} ₽\n` +
-            `📦 *Товары:*\n${productsText}\n\n` +
-            `Подтвердите заказ или измените адрес доставки:`,
-            {
-                parse_mode: 'Markdown',
-                reply_markup: inlineKeyboard
-            }
-        );
+        const messageText =
+            `🛒 Подтверждение заказа\n\n` +
+            `👤 Пользователь: ${userSession.userData.username}\n` +
+            `📍 Адрес доставки: ${userAddress}\n` +
+            `💰 Общая сумма: ${totalPrice} ₽\n` +
+            `📦 Товары:\n${productsText}\n\n` +
+            `Подтвердите заказ или измените адрес доставки:`;
+
+        await bot.sendMessage(chatId, messageText, {
+            reply_markup: inlineKeyboard
+        });
 
         return res.status(200).json({
             status: 'confirmation_sent',
