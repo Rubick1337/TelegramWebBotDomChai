@@ -3,6 +3,7 @@ const ApiError = require('../error/ApiError')
 const uuid = require('uuid')
 const path = require('path');
 const fs = require("fs");
+const { Op } = require('sequelize');
 
 class ProductController {
     async create(req, res, next) {
@@ -21,25 +22,53 @@ class ProductController {
         }
 
     }
-    async getAll(req, res,next) {
-        try{
-            let {productTypeId,limit,page} = req.query
-            page = page || 1
-            limit = limit || 8
-            let offset = page*limit-limit
+    async getAll(req, res, next) {
+        try {
+            let { productTypeId, limit, page, search, sortOrder } = req.query;
+            page = page || 1;
+            limit = limit || 8;
+            let offset = page * limit - limit;
             let products;
-            if(productTypeId) {
-                products = await Product.findAndCountAll({where:{productTypeId},limit,offset})
-            }
-            if(!productTypeId) {
-                products = await Product.findAndCountAll({limit,offset})
-            }
-            return res.json(products)
-        }
-        catch (e) {
-            next(ApiError.badRequest(e.message))
-        }
+            let whereCondition = {};
 
+            if (search) {
+                whereCondition[Op.or] = [
+                    {
+                        name: {
+                            [Op.iLike]: `%${search}%`
+                        }
+                    },
+                    {
+                        description: {
+                            [Op.iLike]: `%${search}%`
+                        }
+                    }
+                ];
+            }
+
+            if (productTypeId) {
+                whereCondition.productTypeId = productTypeId;
+            }
+
+            let order = [];
+            if (sortOrder === 'desc') {
+                order = [['price', 'DESC']];
+            } else if (sortOrder === 'asc') {
+                order = [['price', 'ASC']];
+            } else {
+                order = [['createdAt', 'DESC']];
+            }
+            products = await Product.findAndCountAll({
+                where: whereCondition,
+                limit,
+                offset,
+                order
+            });
+
+            return res.json(products);
+        } catch (e) {
+            next(ApiError.badRequest(e.message));
+        }
     }
     async getById(req, res, next) {
         try
@@ -62,6 +91,7 @@ class ProductController {
     async edit(req, res, next) {
         try {
             const {name,description,price,inStock,productTypeId} = req.body;
+            console.log(name,description,price,inStock,productTypeId);
             const { id } = req.params;
 
             const product = await Product.findByPk(id);

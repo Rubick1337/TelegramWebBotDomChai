@@ -14,7 +14,6 @@ class UserController {
                 return res.status(400).json({ message: 'Username и password обязательны' });
             }
 
-            // Поиск пользователя
             const user = await User.findOne({
                 where: { username }
             });
@@ -23,7 +22,6 @@ class UserController {
                 return res.status(404).json({ message: 'Пользователь не найден' });
             }
 
-            // Проверка пароля
             const isPasswordValid = await bcrypt.compare(password, user.password);
             if (!isPasswordValid) {
                 return res.status(401).json({ message: 'Неверный пароль' });
@@ -35,7 +33,8 @@ class UserController {
                     id: user.id,
                     username: user.username,
                     email: user.email,
-                    role: user.role
+                    role: user.role,
+                    adress: user.adress
                 }
             });
 
@@ -48,7 +47,7 @@ class UserController {
     async register(req, res) {
         try {
             console.log('Request body:', req.body);
-            const { username, password, email, role = 'user' } = req.body;
+            const { username, password, email, role = 'user',adress } = req.body;
 
             console.log('Parsed values:', { username, password, email, role });
 
@@ -56,7 +55,6 @@ class UserController {
                 return res.status(400).json({ message: 'Все поля обязательны для заполнения' });
             }
 
-            // Проверка на существующего пользователя
             const existingUser = await User.findOne({
                 where: {
                     [Op.or]: [
@@ -72,25 +70,24 @@ class UserController {
                 });
             }
 
-            // Хеширование пароля
             const hashedPassword = await bcrypt.hash(password, 10);
 
-            // Создание пользователя
             const user = await User.create({
                 username,
                 password: hashedPassword,
                 email,
-                role
+                role,
+                adress
             });
 
 
             res.status(201).json({
-                token,
                 user: {
                     id: user.id,
                     username: user.username,
                     email: user.email,
-                    role: user.role
+                    role: user.role,
+                    adress: user.adress,
                 }
             });
 
@@ -98,12 +95,6 @@ class UserController {
             console.error('Register error:', error);
             res.status(500).json({ message: 'Ошибка сервера при регистрации' });
         }
-    }
-    async logout(req, res) {
-
-    }
-    async check(req, res) {
-
     }
 }
 module.exports = new UserController();

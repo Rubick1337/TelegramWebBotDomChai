@@ -13,33 +13,22 @@ const User = sequelize.define('user', {
 const Product = sequelize.define('product', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
     name: {type: DataTypes.STRING, allowNull: false},
-    description: {type: DataTypes.TEXT, allowNull: false}, // описание
-    rating: {type: DataTypes.FLOAT, defaultValue: 0}, // рейтинг
-    price: {type: DataTypes.DECIMAL(10, 2), allowNull: false}, // цена
-    inStock: {type: DataTypes.BOOLEAN, defaultValue: true}, // в наличии
+    description: {type: DataTypes.TEXT, allowNull: false},
+    rating: {type: DataTypes.FLOAT, defaultValue: 0},
+    price: {type: DataTypes.DECIMAL(10, 2), allowNull: false},
+    inStock: {type: DataTypes.BOOLEAN, defaultValue: true},
     img: {type: DataTypes.STRING, allowNull: false},
 })
 
 const ProductType = sequelize.define('product_type', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    name: {type: DataTypes.STRING, allowNull: false, unique: true}, // название типа
-})
-
-const Basket = sequelize.define('basket', {
-    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    status: {type: DataTypes.ENUM('active', 'completed', 'abandoned'), defaultValue: 'active'},
-})
-
-const BasketItem = sequelize.define('basket_item', {
-    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    quantity: {type: DataTypes.INTEGER, defaultValue: 1, allowNull: false},
+    name: {type: DataTypes.STRING, allowNull: false, unique: true},
 })
 
 const Order = sequelize.define('order', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    orderNumber: {type: DataTypes.STRING, unique: true},
     date: {type: DataTypes.DATE, defaultValue: DataTypes.NOW},
-    status: {type: DataTypes.ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled'), defaultValue: 'pending'},
+    status: {type: DataTypes.ENUM('pending', 'processing', 'delivered', 'cancelled'), defaultValue: 'pending'},
     totalAmount: {type: DataTypes.DECIMAL(10, 2), allowNull: false},
     shippingAddress: {type: DataTypes.STRING, allowNull: false},
 })
@@ -47,89 +36,45 @@ const Order = sequelize.define('order', {
 const OrderItem = sequelize.define('order_item', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
     quantity: {type: DataTypes.INTEGER, allowNull: false},
-    price: {type: DataTypes.DECIMAL(10, 2), allowNull: false},
+    price: {type: DataTypes.DECIMAL(10, 2), allowNull: false}
 })
 
 ProductType.hasMany(Product, {
-    foreignKey: 'productTypeId',
-    as: 'products'
+    foreignKey: 'productTypeId'
 });
 
 Product.belongsTo(ProductType, {
-    foreignKey: 'productTypeId',
-    as: 'productType'
-});
-
-User.hasOne(Basket, {
-    foreignKey: 'userId',
-    as: 'basket'
-});
-Basket.belongsTo(User, {
-    foreignKey: 'userId',
-    as: 'user'
+    foreignKey: 'productTypeId'
 });
 
 User.hasMany(Order, {
-    foreignKey: 'userId',
-    as: 'orders'
+    foreignKey: 'userId'
 });
+
 Order.belongsTo(User, {
-    foreignKey: 'userId',
-    as: 'user'
-});
-
-Basket.hasMany(BasketItem, {
-    foreignKey: 'basketId',
-    as: 'items'
-});
-BasketItem.belongsTo(Basket, {
-    foreignKey: 'basketId',
-    as: 'basket'
-});
-
-BasketItem.belongsTo(Product, {
-    foreignKey: 'productId',
-    as: 'product'
-});
-Product.hasMany(BasketItem, {
-    foreignKey: 'productId',
-    as: 'basketItems'
+    foreignKey: 'userId'
 });
 
 Order.hasMany(OrderItem, {
-    foreignKey: 'orderId',
-    as: 'items'
+    foreignKey: 'orderId'
 });
+
 OrderItem.belongsTo(Order, {
-    foreignKey: 'orderId',
-    as: 'order'
+    foreignKey: 'orderId'
 });
 
 OrderItem.belongsTo(Product, {
-    foreignKey: 'productId',
-    as: 'product'
+    foreignKey: 'productId'
 });
+
 Product.hasMany(OrderItem, {
-    foreignKey: 'productId',
-    as: 'orderItems'
-});
-
-
-Basket.hasOne(Order, {
-    foreignKey: 'basketId',
-    as: 'order'
-});
-Order.belongsTo(Basket, {
-    foreignKey: 'basketId',
-    as: 'basket'
+    foreignKey: 'productId'
 });
 
 module.exports = {
     User,
     Product,
     ProductType,
-    Basket,
-    BasketItem,
     Order,
     OrderItem
 }
