@@ -7,7 +7,7 @@ const QR_CODE_BASE_URL = '/static/qrcodes';
 
 async function generateAndSaveOrderQRCode(orderId){
 
-    const qrCodeDataURL = `http://localhost:3000/orders/${orderId}`;
+    const qrCodeDataURL = `http://localhost:3000/order/${orderId}`; //`${process.env.WEB_APP_URL}/order/${orderId}`
     const fileName = `order_${orderId}.png`;
     const filePath = path.join(QR_CODE_DIR, fileName);
 

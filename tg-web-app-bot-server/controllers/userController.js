@@ -3,8 +3,10 @@ const { Op } = require('sequelize');
 const { User, Product} = require('../models/models');
 const cache = require('../redis/cacheUtils')
 const ApiError = require('../error/ApiError')
-
-
+const uuid = require('uuid')
+const mailService = require('../service/mailService');
+const tokenService = require('../service/tokenService');
+const userDto = require('../dtos/userDto')
 class UserController {
 
     async login(req, res) {
@@ -48,11 +50,11 @@ class UserController {
     async register(req, res) {
         try {
             console.log('Request body:', req.body);
-            const { username, password, email, role = 'user',adress } = req.body;
+            const { username, password, email, role = 'user', adress } = req.body;
 
             console.log('Parsed values:', { username, password, email, role });
 
-            if (!username || !password || !email) {
+            if (!username || !password || !email || !adress) {
                 return res.status(400).json({ message: 'Все поля обязательны для заполнения' });
             }
 
@@ -72,28 +74,36 @@ class UserController {
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
+            const activationLink = uuid.v4();
 
             const user = await User.create({
                 username,
                 password: hashedPassword,
                 email,
                 role,
-                adress
+                adress,
+                activationLink,
+                isActivated: false,
+                refreshToken: ''
             });
-            await cache.invalidateCache("users")
-            res.status(201).json({
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                    role: user.role,
-                    adress: user.adress,
-                }
+
+            await mailService.sendActivationMail(email, `http://localhost:8000/api/user/activate/${activationLink}`);
+
+            const UserDto = new userDto(user);
+            const tokens = tokenService.generateToken({...UserDto});
+
+            await tokenService.save(user.id, tokens.refreshToken);
+
+            await cache.invalidateCache("users");
+            res.cookie('refreshToken', user.refreshToken,{maxAge: 30*24*60*60*1000,httpOnly:true });
+            return res.status(201).json({
+                ...tokens,
+                user: UserDto,
             });
 
         } catch (error) {
             console.error('Register error:', error);
-            res.status(500).json({ message: 'Ошибка сервера при регистрации' });
+            return res.status(500).json({ message: 'Ошибка сервера при регистрации' });
         }
     }
      async getAll(req, res, next) {
@@ -152,6 +162,30 @@ class UserController {
             )
             await cache.invalidateCache("users")
             return res.json({ message: 'Пользователь обновлен' });
+        }
+        catch(error) {
+            return next(ApiError.internal(error.message));
+        }
+    }
+    async logout(req, res,next) {
+        try{
+
+        }
+        catch(error) {
+            return next(ApiError.internal(error.message));
+        }
+    }
+    async refresh(req, res,next) {
+        try{
+
+        }
+        catch(error) {
+            return next(ApiError.internal(error.message));
+        }
+    }
+    async activate(req, res,next) {
+        try{
+
         }
         catch(error) {
             return next(ApiError.internal(error.message));

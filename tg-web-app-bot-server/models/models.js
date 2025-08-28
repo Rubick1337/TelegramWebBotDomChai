@@ -8,6 +8,9 @@ const User = sequelize.define('user', {
     adress: {type: DataTypes.STRING, allowNull: false},
     email: {type: DataTypes.STRING, allowNull: false},
     role: {type: DataTypes.STRING, allowNull: false},
+    isActivated: {type: DataTypes.BOOLEAN, defaultValue: false},
+    activationLink: {type: DataTypes.STRING, allowNull: true},
+    refreshToken: {type: DataTypes.STRING, allowNull: true},
 })
 
 const Product = sequelize.define('product', {
