@@ -31,6 +31,7 @@ const Order = sequelize.define('order', {
     status: {type: DataTypes.ENUM('pending', 'processing', 'delivered', 'cancelled'), defaultValue: 'pending'},
     totalAmount: {type: DataTypes.DECIMAL(10, 2), allowNull: false},
     shippingAddress: {type: DataTypes.STRING, allowNull: false},
+    qrCodeFileName: {type: DataTypes.STRING, allowNull: true}
 })
 
 const OrderItem = sequelize.define('order_item', {

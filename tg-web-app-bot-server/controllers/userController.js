@@ -1,7 +1,8 @@
-
 const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
-const { User } = require('../models/models');
+const { User, Product} = require('../models/models');
+const cache = require('../redis/cacheUtils')
+const ApiError = require('../error/ApiError')
 
 
 class UserController {
@@ -79,8 +80,7 @@ class UserController {
                 role,
                 adress
             });
-
-
+            await cache.invalidateCache("users")
             res.status(201).json({
                 user: {
                     id: user.id,
@@ -94,6 +94,67 @@ class UserController {
         } catch (error) {
             console.error('Register error:', error);
             res.status(500).json({ message: 'Ошибка сервера при регистрации' });
+        }
+    }
+     async getAll(req, res, next) {
+        try{
+            let {limit, page, search } = req.query;
+            page = page || 1;
+            limit = limit || 8;
+            console.log('Parsed values:', limit, page, search );
+            let offset = page * limit - limit;
+            let users;
+            let whereCondition = {};
+            const cacheKey = cache.generateCacheKey("users","getAll",{limit, page, search});
+            const cacheData = await cache.getCache(cacheKey);
+            if(cacheData) {
+                console.log('Getting users from cache');
+                return res.json(cacheData);
+            }
+            if (search) {
+                whereCondition[Op.or] = [
+                    {
+                        username: {
+                            [Op.iLike]: `%${search}%`
+                        }
+                    },
+                    {
+                        email: {
+                            [Op.iLike]: `%${search}%`
+                        }
+                    }
+                ]
+            }
+            users = await User.findAndCountAll({
+                where: whereCondition,
+                limit,
+                offset
+            })
+            await cache.setCache(cacheKey,3600,users);
+            return res.json(users);
+        }
+        catch(error) {
+            return next(ApiError.internal(error.message));
+        }
+    }
+    async updateRole(req, res,next) {
+        try{
+            const {role} = req.body;
+            const { id } = req.params;
+            const user = await User.findByPk(id);
+            if (!user) {
+                return  next(ApiError.notFound("Пользователь не найден"));
+            }
+            await user.update(
+                {
+                    role
+                }
+            )
+            await cache.invalidateCache("users")
+            return res.json({ message: 'Пользователь обновлен' });
+        }
+        catch(error) {
+            return next(ApiError.internal(error.message));
         }
     }
 }

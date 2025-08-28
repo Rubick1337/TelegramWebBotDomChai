@@ -21,9 +21,10 @@ function initBot() {
                     case 'admin':
                         console.log('Building keyboard for admin');
                         keyboard = [
-                            [{text: '⚙️ Панель управления', web_app: {url: `${process.env.WEB_APP_URL}/admin`}}],
+                            [{text: '⚙️ Панель управления продуктов', web_app: {url: `${process.env.WEB_APP_URL}/admin/products`}}],
                             [{text: '📦 Все заказы', web_app: {url: `${process.env.WEB_APP_URL}/order`}}],
-                            [{text: '📊 Статистика', web_app: {url: `${process.env.WEB_APP_URL}/stats`}}],
+                            [{text: '⚙️ Панель управления типов', web_app: {url: `${process.env.WEB_APP_URL}/admin/types`}}],
+                            [{text: '🧑‍💼 Панель управления пользоватлей', web_app: {url: `${process.env.WEB_APP_URL}/admin/users`}}],
                             [{text: '🚪 Выйти из системы'}]
                         ];
                         break;
@@ -37,7 +38,6 @@ function initBot() {
                     default:
                         console.log('Building keyboard for default role:', cleanRole);
                         keyboard = [
-                            [{text: '🛒 Магазин', web_app: {url: `${process.env.WEB_APP_URL}/products`}}],
                             [{text: '🚪 Выйти из системы'}]
                         ];
                 }

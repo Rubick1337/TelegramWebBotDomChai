@@ -9,6 +9,7 @@ import AuthForm from "./Components/Form/Form"
 import UserOrders from "./Components/UserOrders/UserOrders";
 import AdminProductList from "./Components/AdminProductList/AdminProductList";
 import AdminTypeList from "./Components/AdminTypeList/AdminTypeList";
+import UserTable from "./Components/UserTable/UserTable";
 
 function App() {
   const {tg,onToogleButton} = useTelegram();
@@ -24,6 +25,7 @@ function App() {
             <Route path="/order" element={<UserOrders/>}></Route>
             <Route path="/admin/products" element={<AdminProductList/>}></Route>
             <Route path="/admin/types" element={<AdminTypeList/>}></Route>
+            <Route path="/admin/users" element={<UserTable/>}></Route>
         </Routes>
     </div>
   );

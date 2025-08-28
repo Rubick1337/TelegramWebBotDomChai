@@ -192,7 +192,7 @@ const AdminTypeList = () => {
             }}
         >
             {/* Заголовок и кнопка добавления */}
-            <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center',gap: "9px" }}>
                 <h2 style={{ margin: 0 }}>Управление типами продуктов</h2>
                 <button
                     onClick={handleCreate}

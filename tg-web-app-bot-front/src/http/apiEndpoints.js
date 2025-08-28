@@ -17,5 +17,11 @@ export const API_ENDPOINTS = {
         GET_ONE: (id) => `${API_BASE_URL}api/order/${id}`,
         CREATE: `${API_BASE_URL}api/order`,
         UPDATE_STATUS: (id) => `${API_BASE_URL}api/order/${id}/status`,
+    },
+    USER: {
+        LOGIN: `${API_BASE_URL}api/user/login`,
+        REGISTER: `${API_BASE_URL}api/user/register`,
+        GET_ALL: `${API_BASE_URL}api/user/getAll`,
+        UPDATE_ROLE: (id) => `${API_BASE_URL}api/user/${id}`,
     }
 }

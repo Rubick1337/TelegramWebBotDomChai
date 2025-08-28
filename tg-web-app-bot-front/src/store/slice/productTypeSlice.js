@@ -157,14 +157,13 @@ const typeSlice = createSlice({
                 state.error = action.payload;
             })
 
-            // Удаление типа
+
             .addCase(deleteType.pending, (state) => {
                 state.deleteLoading = true;
                 state.error = null;
             })
             .addCase(deleteType.fulfilled, (state, action) => {
                 state.deleteLoading = false;
-                // Убрано прямое удаление из массива
                 if (state.currentType && state.currentType.id === action.payload) {
                     state.currentType = null;
                 }

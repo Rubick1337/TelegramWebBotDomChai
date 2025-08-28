@@ -1,5 +1,6 @@
 const {Order, OrderItem, Product, User} = require('../models/models')
 const cache = require("../redis/cacheUtils")
+const generateAndSaveOrderQRCode = require("../service/qrService");
 
 class OrderController {
     async getAll(req, res) {
@@ -131,19 +132,28 @@ class OrderController {
 
     async create(req, res) {
         try {
+
             const {items, totalAmount, shippingAddress, userId} = req.body
+            console.log('Получены данные для создания заказа:', { items, totalAmount, shippingAddress, userId })
+
 
             if (!items || !Array.isArray(items) || items.length === 0) {
+                console.log('Ошибка: отсутствуют товары в заказе')
                 return res.status(400).json({message: 'Нет товаров в заказе'})
             }
 
+
+            console.log('Создаем основную запись заказа в БД...')
             const order = await Order.create({
                 userId: userId || null,
                 totalAmount,
                 shippingAddress,
                 status: 'pending'
             })
+            console.log(`Заказ создан успешно. ID: ${order.id}`)
 
+
+            console.log('Подготавливаем элементы заказа...')
             const orderItems = items.map(item => ({
                 orderId: order.id,
                 productId: item.productId,
@@ -151,8 +161,24 @@ class OrderController {
                 price: item.price
             }))
 
+            console.log('Сохраняем элементы заказа в БД...')
             await OrderItem.bulkCreate(orderItems)
+            console.log(`Создано ${orderItems.length} элементов заказа`)
 
+
+            console.log('Начинаем генерацию QR-кода...')
+            const qrCodeFileName = await generateAndSaveOrderQRCode(
+                order.id,
+            );
+            console.log(`QR-код сгенерирован и сохранен как: ${qrCodeFileName}`)
+
+            console.log('Обновляем запись заказа с именем файла QR-кода...')
+            order.qrCodeFileName = qrCodeFileName;
+            await order.save();
+            console.log('Заказ обновлен с информацией о QR-коде')
+
+
+            console.log('Загружаем полные данные заказа для ответа...')
             const fullOrder = await Order.findOne({
                 where: {id: order.id},
                 include: [{
@@ -160,12 +186,23 @@ class OrderController {
                     include: [Product]
                 }]
             })
+
+            console.log('Очищаем кэш заказов...')
             await cache.invalidateCache("orders")
-            return res.status(201).json(fullOrder)
+
+            console.log('Отправляем ответ клиенту...')
+            return res.status(201).json({
+                message: 'Заказ создан успешно',
+                order: fullOrder,
+            })
 
         } catch (error) {
-            console.error('Order create error:', error)
-            return res.status(500).json({message: 'Ошибка при создании заказа'})
+            console.error('Ошибка при создании заказа:', error)
+
+            return res.status(500).json({
+                message: 'Ошибка при создании заказа',
+                error: process.env.NODE_ENV === 'development' ? error.message : 'Внутренняя ошибка сервера'
+            })
         }
     }
 

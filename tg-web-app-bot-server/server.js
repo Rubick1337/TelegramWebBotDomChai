@@ -23,8 +23,8 @@ app.use(cors({
         'http://localhost:3000',
         'http://localhost:8000',
         process.env.WEB_APP_URL,
-        'https://*.ngrok-free.app', // Разрешаем все ngrok домены
-        'https://*.ngrok.io'        // Альтернативные ngrok домены
+        'https://*.ngrok-free.app',
+        'https://*.ngrok.io'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
